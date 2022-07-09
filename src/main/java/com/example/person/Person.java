@@ -30,9 +30,4 @@ public class Person implements Serializable {
 
     @Column(name = "PERSON_AGE")
     private Integer age;
-
-    @PrePersist
-    void prePersist() {
-        this.setId(UUID.randomUUID());
-    }
 }
