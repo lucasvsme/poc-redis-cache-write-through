@@ -16,9 +16,10 @@ and [Write Back](https://github.com/lucasvalenteds/poc-redis-cache-write-back).
 
 ## How to run
 
-| Description | Command          |
-|:------------|:-----------------|
-| Run tests   | `./gradlew test` |
+| Description     | Command             |
+|:----------------|:--------------------|
+| Run tests       | `./gradlew test`    |
+| Run application | `./gradlew bootRun` |
 
 ## Preview
 
