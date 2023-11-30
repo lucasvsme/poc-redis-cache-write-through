@@ -12,19 +12,22 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
+import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
@@ -34,28 +37,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Import(ApplicationTest.TestConfig.class)
 @AutoConfigureWebTestClient
 @Testcontainers
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ApplicationTest {
-
-    @Container
-    private static final PostgreSQLContainer<?> POSTGRES_CONTAINER =
-            new PostgreSQLContainer<>(DockerImageName.parse("postgres"));
-
-    @Container
-    private static final GenericContainer<?> REDIS_CONTAINER =
-            new GenericContainer<>(DockerImageName.parse("redis"))
-                    .withExposedPorts(6379);
-
-    @DynamicPropertySource
-    private static void setApplicationProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES_CONTAINER::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES_CONTAINER::getUsername);
-        registry.add("spring.datasource.password", POSTGRES_CONTAINER::getPassword);
-        registry.add("spring.redis.host", REDIS_CONTAINER::getHost);
-        registry.add("spring.redis.port", REDIS_CONTAINER::getFirstMappedPort);
-    }
 
     private static PersonRequest personRequest;
     private static UUID personId;
@@ -183,5 +169,22 @@ class ApplicationTest {
         final var lastSegment = segments[segments.length - 1];
 
         return UUID.fromString(lastSegment);
+    }
+
+    @TestConfiguration
+    static class TestConfig {
+
+        @Bean
+        @ServiceConnection(type = JdbcConnectionDetails.class)
+        PostgreSQLContainer<?> POSTGRES_CONTAINER() {
+            return new PostgreSQLContainer<>(DockerImageName.parse("postgres"));
+        }
+
+        @Bean
+        @ServiceConnection(name = "redis", type = RedisConnectionDetails.class)
+        GenericContainer<?> REDIS_CONTAINER() {
+            return new GenericContainer<>(DockerImageName.parse("redis"))
+                    .withExposedPorts(6379);
+        }
     }
 }
